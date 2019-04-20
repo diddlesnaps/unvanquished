@@ -1,15 +1,119 @@
-name: my-snap-name # you probably want to 'snapcraft register <name>'
-version: '0.1' # just for humans, typically '1.2+git' or '1.3.2'
-summary: Single-line elevator pitch for your amazing snap # 79 char long summary
+name: unvanquished
+version: '0.50.0'
+summary: An FPS/RTS hybrid game powered by the Daemon engine
 description: |
   This is my-snap's description. You have a paragraph or two to tell the
   most important story about your snap. Keep it under 100 words though,
   we live in tweetspace and your description wants to look good in the snap
   store.
 
-confinement: devmode # use 'strict' once you have the right plugs and slots
+confinement: strict
+
+apps:
+  unvanquished:
+    command: desktop-launch snapcraft-preload $SNAP/usr/games/unvanquished/daemon -homepath $SNAP_USER_DATA
+    environment:
+      ALSOFT_CONF: $SNAP/etc/openal/alsoft.conf
+    plugs:
+    - desktop
+    - desktop-legacy
+    - hardware-observe
+    - joystick
+    - opengl
+    - pulseaudio
+    - screen-inhibit-control
+    - wayland
+    - x11
 
 parts:
-  my-part:
-    # See 'snapcraft plugins'
-    plugin: nil
+  unvanquished-assets:
+    after: [unvanquished]
+    plugin: dump
+    source: https://github.com/Unvanquished/Unvanquished/releases/download/v$SNAPCRAFT_PROJECT_VERSION/unvanquished_$SNAPCRAFT_PROJECT_VERSION.zip
+    organize:
+      pkg: usr/games/unvanquished/pkg
+
+  unvanquished:
+    after: [desktop-glib-only, snapcraft-preload]
+    plugin: cmake
+    source: https://github.com/Unvanquished/Unvanquished/archive/v$SNAPCRAFT_PROJECT_VERSION.tar.gz
+    configflags:
+    - -DCMAKE_BUILD_PREFIX=/usr
+    - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    - -DCMAKE_SKIP_RPATH=ON
+    - -DUSE_VOIP=ON
+    - -DBUILD_GAME_QVM=OFF
+    - -DBUILD_GAME_NACL=OFF
+    - -DBUILD_GAME_NACL_NATIVE_DLL=OFF
+    - -DUSE_SDL2=ON
+    - -DBUILD_TTY_CLIENT=OFF
+    artifacts:
+    - cgame-native-dll.so
+    - cgame-native-exe
+    - daemon
+    - daemonded
+    - sgame-native-dll.so
+    - sgame-native-exe
+    organize:
+      '*game-native-*': usr/games/unvanquished
+      daemon*: usr/games/unvanquished
+      nacl_*: usr/games/unvanquished
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/games/unvanquished
+      install -m644 -D -t $SNAPCRAFT_PART_INSTALL/usr/games/unvanquished irt_core-$(uname -m).nexe
+      install -m755 -D -t $SNAPCRAFT_PART_INSTALL/usr/games/unvanquished nacl_helper_bootstrap
+      install -m755 -D -t $SNAPCRAFT_PART_INSTALL/usr/games/unvanquished nacl_loader
+    build-packages:
+    - curl
+    - diffutils
+    - grep
+    - libcurl4-openssl-dev
+    - libfreetype6-dev
+    - libgeoip-dev
+    - libglew-dev
+    - libgmp-dev
+    - libjpeg-turbo8-dev
+    - liblua5.1-0-dev
+    - libncurses5-dev
+    - libncursesw5-dev
+    - libogg-dev
+    - libopenal-dev
+    - libopus-dev
+    - libopusfile-dev
+    - libpng-dev
+    - libpulse-dev
+    - libsdl2-dev
+    - libtheora-dev
+    - libvorbis-dev
+    - libwebp-dev
+    - nettle-dev
+    - python
+    - python-jinja2
+    - python-yaml
+    - sed
+    - zlib1g-dev
+    stage-packages:
+    - libcurl3
+    - libfreetype6
+    - libgeoip1
+    - libglew1.13
+    - libgmp10
+    - libjpeg-turbo8
+    - liblua5.1-0
+    - libncurses5
+    - libncursesw5
+    - libnettle6
+    - libogg0
+    - libopenal1
+    - libopus0
+    - libopusfile0
+    - libpng12-0
+    - libpulse0
+    - libsdl2-2.0-0
+    - libtheora0
+    - libvorbis0a
+    - libvorbisfile3
+    - libwebp5
+    - zlib1g
+    build-attributes:
+    - no-system-libraries
